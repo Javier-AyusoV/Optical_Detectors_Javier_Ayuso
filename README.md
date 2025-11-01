@@ -157,9 +157,3 @@ The following parameters can be adjusted in the code if needed:
 - **Matching tolerance**: 1.0-3.0 pixels (depends on image alignment quality)
 - **Aperture radius**: 2.0-5.0 pixels (should enclose ~90% of stellar flux)
 - **Ellipticity tolerance**: 0.5-0.8 (0.5 for very round sources only, 0.8 more permissive)
-
-## Author
-
-**[Your Name]**  
-University College Dublin  
-November 2025
