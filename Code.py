@@ -111,3 +111,50 @@ catalog.to_csv('matched_sources.csv', index=False)
 # Print summary
 print(f"Matched stars: {len(matched_coords)}")
 print(f"Match rate: {len(matched_coords)/min(len(stars_f336w), len(stars_f555w))*100:.1f}%")
+
+def measure_photometry(image_f336w, image_f555w, matched_coords, aperture_radius=3.0):
+    """Measure photometry for all matched sources in both filters."""
+    h, w = image_f336w.shape
+    yy, xx = np.ogrid[:h, :w]
+    
+    magnitudes_f336w = []
+    magnitudes_f555w = []
+    
+    for x, y in matched_coords:
+        distance = np.sqrt((xx - x)**2 + (yy - y)**2)
+        
+        # Aperture and background masks
+        aperture = distance <= aperture_radius
+        sky = (distance >= 5.0) & (distance <= 8.0)
+        
+        # Measure flux in both filters
+        for image, mag_list in [(image_f336w, magnitudes_f336w), (image_f555w, magnitudes_f555w)]:
+            if aperture.any() and sky.any():
+                background = np.median(image[sky])
+                flux = np.sum(image[aperture] - background)
+                mag = -2.5 * np.log10(flux) if flux > 0 else np.nan
+            else:
+                mag = np.nan
+            mag_list.append(mag)
+    
+    # Create catalog
+    catalog = pd.DataFrame({
+        'Object_ID': np.arange(1, len(matched_coords) + 1),
+        'x_center': matched_coords[:, 0],
+        'y_center': matched_coords[:, 1],
+        'aperture_radius': aperture_radius,
+        'mag_F336W': magnitudes_f336w,
+        'mag_F555W': magnitudes_f555w
+    })
+    
+    # Remove invalid magnitudes
+    catalog = catalog.dropna()
+    return catalog
+
+# Perform photometry
+photometry_catalog = measure_photometry(median_f336w, median_f555w, matched_coords, aperture_radius=3.0)
+
+# Save catalog
+photometry_catalog.to_csv('photometry_catalog.csv', index=False)
+
+print(f"Photometry complete: {len(photometry_catalog)} stars with valid magnitudes")
