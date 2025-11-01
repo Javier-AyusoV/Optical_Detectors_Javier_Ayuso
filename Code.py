@@ -13,21 +13,7 @@ import matplotlib.pyplot as plt
 # ============================================================================
 
 def median_combine(folder: str, output_path: str) -> np.ndarray:
-    """
-    Median-combine all FITS files in a folder to remove cosmic rays.
-    
-    Parameters
-    ----------
-    folder : str
-        Path to directory containing FITS files
-    output_path : str
-        Path where median-combined FITS will be saved
-        
-    Returns
-    -------
-    np.ndarray
-        Median-combined 2D image array
-    """
+    """ Median-combine all FITS files in a folder to remove cosmic rays."""
     files = sorted(glob.glob(f"{folder}/*.fits"))
     
     images = []
@@ -42,16 +28,8 @@ def median_combine(folder: str, output_path: str) -> np.ndarray:
     return median_img
 
 
-print("=" * 60)
-print("STEP 1: Cosmic Ray Removal")
-print("=" * 60)
-
 median_f336w = median_combine("Data/F336W", "F336W_median.fits")
 median_f555w = median_combine("Data/F555W", "F555W_median.fits")
-
-print(f"F336W median image: {median_f336w.shape}")
-print(f"F555W median image: {median_f555w.shape}")
-print()
 
 
 # ============================================================================
@@ -59,15 +37,14 @@ print()
 # ============================================================================
 
 def gaussian_2d(xy, amp, xo, yo, sx, sy, offset):
-    """2D Gaussian model for star fitting."""
+    """ 2D Gaussian model for star fitting."""
     x, y = xy
     g = offset + amp * np.exp(-(((x - xo)**2) / (2 * sx**2) + ((y - yo)**2) / (2 * sy**2)))
     return g.ravel()
 
 
 def find_stars(image, threshold_sigma=1, box_size=9):
-    """
-    Find stars in image using local maxima detection and Gaussian fitting.
+    """ Find stars in image using local maxima detection and Gaussian fitting. 
     Returns array of (x_center, y_center) for detected stars.
     """
     # Find local maxima above threshold
@@ -99,7 +76,7 @@ def find_stars(image, threshold_sigma=1, box_size=9):
             amp, xo, yo, sx, sy, _ = popt
             
             # Quality checks: positive flux, roundness, reasonable size
-            if amp > 0 and (1 - min(sx, sy) / max(sx, sy)) <= 0.7 and 0.5 <= (sx + sy) / 2 <= 5.0:
+            if amp > 0 and (1 - min(sx, sy) / max(sx, sy)) <= 0.8 and 0.3 <= (sx + sy) / 2 <= 6.0:
                 # Convert local to global coordinates
                 stars.append([x_min + xo, y_min + yo])
         except:
@@ -108,17 +85,12 @@ def find_stars(image, threshold_sigma=1, box_size=9):
     return np.array(stars)
 
 
-print("=" * 60)
-print("STEP 2: Star Detection")
-print("=" * 60)
-
-stars_f336w = find_stars(median_f336w)
-stars_f555w = find_stars(median_f555w)
+stars_f336w = find_stars(median_f336w, threshold_sigma=0.8)
+stars_f555w = find_stars(median_f555w, threshold_sigma=0.8)
 
 print(f"F336W: {len(stars_f336w)} stars detected")
 print(f"F555W: {len(stars_f555w)} stars detected")
 print()
-
 
 # ============================================================================
 # STEP 3: SOURCE MATCHING
@@ -145,10 +117,6 @@ def match_sources(sources1, sources2, tolerance=2.0):
     return np.array(matched), np.array(idx1), np.array(idx2)
 
 
-print("=" * 60)
-print("STEP 3: Source Matching")
-print("=" * 60)
-
 matched_coords, idx_f336w, idx_f555w = match_sources(stars_f336w, stars_f555w, tolerance=2.0)
 
 # Save matched source catalog
@@ -163,7 +131,6 @@ print(f"Matched stars: {len(matched_coords)}")
 print(f"Match rate: {len(matched_coords)/min(len(stars_f336w), len(stars_f555w))*100:.1f}%")
 print(f"Catalog saved: matched_sources.csv")
 print()
-
 
 # ============================================================================
 # STEP 4: APERTURE PHOTOMETRY
@@ -209,10 +176,6 @@ def measure_photometry(image_f336w, image_f555w, matched_coords, aperture_radius
     return catalog
 
 
-print("=" * 60)
-print("STEP 4: Aperture Photometry")
-print("=" * 60)
-
 photometry_catalog = measure_photometry(median_f336w, median_f555w, matched_coords, aperture_radius=3.0)
 photometry_catalog.to_csv('photometry_catalog.csv', index=False)
 
@@ -224,10 +187,6 @@ print()
 # ============================================================================
 # STEP 5: HERTZSPRUNG-RUSSELL DIAGRAM
 # ============================================================================
-
-print("=" * 60)
-print("STEP 5: Creating HR Diagram")
-print("=" * 60)
 
 # Calculate color and magnitude
 color = photometry_catalog['mag_F336W'] - photometry_catalog['mag_F555W']
@@ -247,15 +206,3 @@ plt.show()
 
 print(f"HR diagram created with {len(color)} stars")
 print(f"Saved as: HR_diagram.png")
-print()
-
-print("=" * 60)
-print("PIPELINE COMPLETE")
-print("=" * 60)
-print("Output files:")
-print("  - F336W_median.fits")
-print("  - F555W_median.fits")
-print("  - matched_sources.csv")
-print("  - photometry_catalog.csv")
-print("  - HR_diagram.png")
-print("=" * 60)
