@@ -76,7 +76,7 @@ def find_stars(image, threshold_sigma=1, box_size=9):
             amp, xo, yo, sx, sy, _ = popt
             
             # Quality checks: positive flux, roundness, reasonable size
-            if amp > 0 and (1 - min(sx, sy) / max(sx, sy)) <= 0.8 and 0.3 <= (sx + sy) / 2 <= 6.0:
+            if amp > 0 and (1 - min(sx, sy) / max(sx, sy)) <= 0.9 and 0.3 <= (sx + sy) / 2 <= 6.0:
                 # Convert local to global coordinates
                 stars.append([x_min + xo, y_min + yo])
         except:
@@ -85,8 +85,8 @@ def find_stars(image, threshold_sigma=1, box_size=9):
     return np.array(stars)
 
 
-stars_f336w = find_stars(median_f336w, threshold_sigma=0.8)
-stars_f555w = find_stars(median_f555w, threshold_sigma=0.8)
+stars_f336w = find_stars(median_f336w, threshold_sigma=0.6)
+stars_f555w = find_stars(median_f555w, threshold_sigma=0.5) #Threshold lower as the filter is the bottleneck
 
 print(f"F336W: {len(stars_f336w)} stars detected")
 print(f"F555W: {len(stars_f555w)} stars detected")
@@ -96,7 +96,7 @@ print()
 # STEP 3: SOURCE MATCHING
 # ============================================================================
 
-def match_sources(sources1, sources2, tolerance=2.0):
+def match_sources(sources1, sources2, tolerance=2.5):
     """Match sources between two catalogs based on proximity."""
     tree = cKDTree(sources2)
     
@@ -136,7 +136,7 @@ print()
 # STEP 4: APERTURE PHOTOMETRY
 # ============================================================================
 
-def measure_photometry(image_f336w, image_f555w, matched_coords, aperture_radius=3.0):
+def measure_photometry(image_f336w, image_f555w, matched_coords, aperture_radius=3.5):
     """Measure photometry for all matched sources in both filters."""
     h, w = image_f336w.shape
     yy, xx = np.ogrid[:h, :w]
@@ -149,7 +149,7 @@ def measure_photometry(image_f336w, image_f555w, matched_coords, aperture_radius
         
         # Aperture and background masks
         aperture = distance <= aperture_radius
-        sky = (distance >= 5.0) & (distance <= 8.0)
+        sky = (distance >= 4.0) & (distance <= 7.0)
         
         # Measure flux in both filters
         for image, mag_list in [(image_f336w, magnitudes_f336w), (image_f555w, magnitudes_f555w)]:
