@@ -7,8 +7,27 @@ from scipy.spatial import cKDTree
 import pandas as pd
 import matplotlib.pyplot as plt
 
+
+# ============================================================================
+# STEP 1: COSMIC RAY REMOVAL
+# ============================================================================
+
 def median_combine(folder: str, output_path: str) -> np.ndarray:
-    """Median-combine all FITS files in folder to remove cosmic rays."""
+    """
+    Median-combine all FITS files in a folder to remove cosmic rays.
+    
+    Parameters
+    ----------
+    folder : str
+        Path to directory containing FITS files
+    output_path : str
+        Path where median-combined FITS will be saved
+        
+    Returns
+    -------
+    np.ndarray
+        Median-combined 2D image array
+    """
     files = sorted(glob.glob(f"{folder}/*.fits"))
     
     images = []
@@ -22,13 +41,29 @@ def median_combine(folder: str, output_path: str) -> np.ndarray:
     fits.PrimaryHDU(median_img).writeto(output_path, overwrite=True)
     return median_img
 
+
+print("=" * 60)
+print("STEP 1: Cosmic Ray Removal")
+print("=" * 60)
+
 median_f336w = median_combine("Data/F336W", "F336W_median.fits")
 median_f555w = median_combine("Data/F555W", "F555W_median.fits")
+
+print(f"F336W median image: {median_f336w.shape}")
+print(f"F555W median image: {median_f555w.shape}")
+print()
+
+
+# ============================================================================
+# STEP 2: STAR FINDING
+# ============================================================================
 
 def gaussian_2d(xy, amp, xo, yo, sx, sy, offset):
     """2D Gaussian model for star fitting."""
     x, y = xy
-    return (offset + amp * np.exp(-(((x - xo)**2) / (2 * sx**2) + ((y - yo)**2) / (2 * sy**2)))).ravel()
+    g = offset + amp * np.exp(-(((x - xo)**2) / (2 * sx**2) + ((y - yo)**2) / (2 * sy**2)))
+    return g.ravel()
+
 
 def find_stars(image, threshold_sigma=1, box_size=9):
     """
@@ -72,10 +107,22 @@ def find_stars(image, threshold_sigma=1, box_size=9):
     
     return np.array(stars)
 
-# Detect stars in both filters
+
+print("=" * 60)
+print("STEP 2: Star Detection")
+print("=" * 60)
+
 stars_f336w = find_stars(median_f336w)
 stars_f555w = find_stars(median_f555w)
-print(f"F336W: {len(stars_f336w)} stars | F555W: {len(stars_f555w)} stars")
+
+print(f"F336W: {len(stars_f336w)} stars detected")
+print(f"F555W: {len(stars_f555w)} stars detected")
+print()
+
+
+# ============================================================================
+# STEP 3: SOURCE MATCHING
+# ============================================================================
 
 def match_sources(sources1, sources2, tolerance=2.0):
     """Match sources between two catalogs based on proximity."""
@@ -90,7 +137,7 @@ def match_sources(sources1, sources2, tolerance=2.0):
         dist, j = tree.query(pos1)
         
         if dist < tolerance and j not in used:
-            matched.append((pos1 + sources2[j]) / 2)
+            matched.append((pos1 + sources2[j]) / 2)  # Average position
             idx1.append(i)
             idx2.append(j)
             used.add(j)
@@ -98,10 +145,13 @@ def match_sources(sources1, sources2, tolerance=2.0):
     return np.array(matched), np.array(idx1), np.array(idx2)
 
 
-# Match sources
+print("=" * 60)
+print("STEP 3: Source Matching")
+print("=" * 60)
+
 matched_coords, idx_f336w, idx_f555w = match_sources(stars_f336w, stars_f555w, tolerance=2.0)
 
-# Save catalog
+# Save matched source catalog
 catalog = pd.DataFrame({
     'Object_ID': np.arange(1, len(matched_coords) + 1),
     'x_center': matched_coords[:, 0],
@@ -109,9 +159,15 @@ catalog = pd.DataFrame({
 })
 catalog.to_csv('matched_sources.csv', index=False)
 
-# Print summary
 print(f"Matched stars: {len(matched_coords)}")
 print(f"Match rate: {len(matched_coords)/min(len(stars_f336w), len(stars_f555w))*100:.1f}%")
+print(f"Catalog saved: matched_sources.csv")
+print()
+
+
+# ============================================================================
+# STEP 4: APERTURE PHOTOMETRY
+# ============================================================================
 
 def measure_photometry(image_f336w, image_f555w, matched_coords, aperture_radius=3.0):
     """Measure photometry for all matched sources in both filters."""
@@ -152,15 +208,28 @@ def measure_photometry(image_f336w, image_f555w, matched_coords, aperture_radius
     catalog = catalog.dropna()
     return catalog
 
-# Perform photometry
-photometry_catalog = measure_photometry(median_f336w, median_f555w, matched_coords, aperture_radius=3.0)
 
-# Save catalog
+print("=" * 60)
+print("STEP 4: Aperture Photometry")
+print("=" * 60)
+
+photometry_catalog = measure_photometry(median_f336w, median_f555w, matched_coords, aperture_radius=3.0)
 photometry_catalog.to_csv('photometry_catalog.csv', index=False)
 
 print(f"Photometry complete: {len(photometry_catalog)} stars with valid magnitudes")
+print(f"Catalog saved: photometry_catalog.csv")
+print()
 
-# Calculate color
+
+# ============================================================================
+# STEP 5: HERTZSPRUNG-RUSSELL DIAGRAM
+# ============================================================================
+
+print("=" * 60)
+print("STEP 5: Creating HR Diagram")
+print("=" * 60)
+
+# Calculate color and magnitude
 color = photometry_catalog['mag_F336W'] - photometry_catalog['mag_F555W']
 magnitude = photometry_catalog['mag_F555W']
 
@@ -170,10 +239,23 @@ plt.scatter(color, magnitude, s=1, c='black', alpha=0.5)
 plt.xlabel('$m_{F336W} - m_{F555W}$', fontsize=14)
 plt.ylabel('$m_{F555W}$', fontsize=14)
 plt.title('NGC 1261 - Hertzsprung-Russell Diagram', fontsize=16)
-plt.gca().invert_yaxis()  # Bright stars at top
+plt.gca().invert_yaxis()  # Bright stars at top (astronomical convention)
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig('HR_diagram.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 print(f"HR diagram created with {len(color)} stars")
+print(f"Saved as: HR_diagram.png")
+print()
+
+print("=" * 60)
+print("PIPELINE COMPLETE")
+print("=" * 60)
+print("Output files:")
+print("  - F336W_median.fits")
+print("  - F555W_median.fits")
+print("  - matched_sources.csv")
+print("  - photometry_catalog.csv")
+print("  - HR_diagram.png")
+print("=" * 60)
