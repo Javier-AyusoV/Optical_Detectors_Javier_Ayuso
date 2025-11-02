@@ -108,6 +108,7 @@ The pipeline generates the following files:
 4. **Cosmic ray distribution**: Random and uncorrelated between exposures
 5. **Background variation**: Varies smoothly across the field; local measurement is appropriate
 6. **Point sources**: All detected objects are assumed to be stars (not extended sources like galaxies)
+7. **Instrumental magnitudes**: Calculated magnitudes are not calibrated to a standard system and may be negative. Only relative brightnesses and colors are meaningful.
 
 ### Limitations
 
