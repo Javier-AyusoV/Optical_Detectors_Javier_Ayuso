@@ -79,7 +79,9 @@ The pipeline generates the following files:
   - Positive flux (amplitude > 0)
   - Ellipticity ≤ 0.9 (roundness criterion)
   - Size: 0.3 ≤ σ ≤ 6.0 pixels
-- **Expected detections**: 1,000-3,000 stars per filter
+- **Expected detections**: 
+  - 3,000-4,000 stars for F336E
+  - 2,000-3,000 for filter F555W
 
 ### Step 3: Source Matching
 
