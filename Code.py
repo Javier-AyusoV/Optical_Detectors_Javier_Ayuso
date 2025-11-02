@@ -84,6 +84,19 @@ def find_stars(image, threshold_sigma=1, box_size=9, edge_margin=40):
     
     return np.array(stars)
 
+def visualize_detections(image, stars, title="Detected Stars"):
+    """Show detected stars overlaid on image."""
+    vmin = np.percentile(image, 5)
+    vmax = np.percentile(image, 99)
+    
+    plt.figure(figsize=(10, 10))
+    plt.imshow(image, cmap='gray', origin='lower', vmin=vmin, vmax=vmax)
+    plt.scatter(stars[:, 0], stars[:, 1], s=30, facecolors='none', 
+                edgecolors='red', linewidths=0.5, alpha=0.8)
+    plt.title(f"{title} ({len(stars)} sources)")
+    plt.tight_layout()
+    plt.savefig(f"{title.replace(' ', '_')}.png", dpi=150)
+    plt.show()
 
 # ============================================================================
 # STEP 3: SOURCE MATCHING
@@ -168,6 +181,9 @@ if __name__ == "__main__":
     stars_f336w = find_stars(median_f336w, threshold_sigma=0.5, edge_margin=45) #skip 45 pixels from the selected limits. Stimated through plotting
     stars_f555w = find_stars(median_f555w, threshold_sigma=0.5, edge_margin=40)
     
+    visualize_detections(median_f336w, stars_f336w, "F336W Detected Stars")
+    visualize_detections(median_f555w, stars_f555w, "F555W Detected Stars")
+
     print(f"F336W: {len(stars_f336w)} stars detected")
     print(f"F555W: {len(stars_f555w)} stars detected")
     print()
