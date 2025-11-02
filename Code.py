@@ -28,10 +28,6 @@ def median_combine(folder: str, output_path: str) -> np.ndarray:
     return median_img
 
 
-median_f336w = median_combine("Data/F336W", "F336W_median.fits")
-median_f555w = median_combine("Data/F555W", "F555W_median.fits")
-
-
 # ============================================================================
 # STEP 2: STAR FINDING
 # ============================================================================
@@ -85,13 +81,6 @@ def find_stars(image, threshold_sigma=1, box_size=9):
     return np.array(stars)
 
 
-stars_f336w = find_stars(median_f336w, threshold_sigma=0.6)
-stars_f555w = find_stars(median_f555w, threshold_sigma=0.5) #Threshold lower as the filter is the bottleneck
-
-print(f"F336W: {len(stars_f336w)} stars detected")
-print(f"F555W: {len(stars_f555w)} stars detected")
-print()
-
 # ============================================================================
 # STEP 3: SOURCE MATCHING
 # ============================================================================
@@ -109,7 +98,7 @@ def match_sources(sources1, sources2, tolerance=2.5):
         dist, j = tree.query(pos1)
         
         if dist < tolerance and j not in used:
-            matched.append((pos1 + sources2[j]) / 2)  # Average position
+            matched.append((pos1 + sources2[j]) / 2)
             idx1.append(i)
             idx2.append(j)
             used.add(j)
@@ -117,26 +106,11 @@ def match_sources(sources1, sources2, tolerance=2.5):
     return np.array(matched), np.array(idx1), np.array(idx2)
 
 
-matched_coords, idx_f336w, idx_f555w = match_sources(stars_f336w, stars_f555w, tolerance=2.0)
-
-# Save matched source catalog
-catalog = pd.DataFrame({
-    'Object_ID': np.arange(1, len(matched_coords) + 1),
-    'x_center': matched_coords[:, 0],
-    'y_center': matched_coords[:, 1]
-})
-catalog.to_csv('matched_sources.csv', index=False)
-
-print(f"Matched stars: {len(matched_coords)}")
-print(f"Match rate: {len(matched_coords)/min(len(stars_f336w), len(stars_f555w))*100:.1f}%")
-print(f"Catalog saved: matched_sources.csv")
-print()
-
 # ============================================================================
 # STEP 4: APERTURE PHOTOMETRY
 # ============================================================================
 
-def measure_photometry(image_f336w, image_f555w, matched_coords, aperture_radius=3.5):
+def measure_photometry(image_f336w, image_f555w, matched_coords, aperture_radius=3.0):
     """Measure photometry for all matched sources in both filters."""
     h, w = image_f336w.shape
     yy, xx = np.ogrid[:h, :w]
@@ -176,33 +150,61 @@ def measure_photometry(image_f336w, image_f555w, matched_coords, aperture_radius
     return catalog
 
 
-photometry_catalog = measure_photometry(median_f336w, median_f555w, matched_coords, aperture_radius=3.0)
-photometry_catalog.to_csv('photometry_catalog.csv', index=False)
-
-print(f"Photometry complete: {len(photometry_catalog)} stars with valid magnitudes")
-print(f"Catalog saved: photometry_catalog.csv")
-print()
-
-
 # ============================================================================
-# STEP 5: HERTZSPRUNG-RUSSELL DIAGRAM
+# MAIN EXECUTION
 # ============================================================================
 
-# Calculate color and magnitude
-color = photometry_catalog['mag_F336W'] - photometry_catalog['mag_F555W']
-magnitude = photometry_catalog['mag_F336W']
-
-# Create HR Diagram
-plt.figure(figsize=(8, 10))
-plt.scatter(color, magnitude, s=1, c='black', alpha=0.5)
-plt.xlabel('$m_{F336W} - m_{F555W}$', fontsize=14)
-plt.ylabel('$m_{F335W}$', fontsize=14)
-plt.title('NGC 1261 - Hertzsprung-Russell Diagram', fontsize=16)
-plt.gca().invert_yaxis()  # Bright stars at top (astronomical convention)
-plt.grid(True, alpha=0.3)
-plt.tight_layout()
-plt.savefig('HR_diagram.png', dpi=300, bbox_inches='tight')
-plt.show()
-
-print(f"HR diagram created with {len(color)} stars")
-print(f"Saved as: HR_diagram.png")
+if __name__ == "__main__":
+    
+    # STEP 1: Cosmic Ray Removal
+    median_f336w = median_combine("Data/F336W", "F336W_median.fits")
+    median_f555w = median_combine("Data/F555W", "F555W_median.fits")
+    
+    # STEP 2: Star Finding
+    stars_f336w = find_stars(median_f336w, threshold_sigma=0.6)
+    stars_f555w = find_stars(median_f555w, threshold_sigma=0.5)
+    
+    print(f"F336W: {len(stars_f336w)} stars detected")
+    print(f"F555W: {len(stars_f555w)} stars detected")
+    print()
+    
+    # STEP 3: Source Matching
+    matched_coords, idx_f336w, idx_f555w = match_sources(stars_f336w, stars_f555w, tolerance=2.0)
+    
+    catalog = pd.DataFrame({
+        'Object_ID': np.arange(1, len(matched_coords) + 1),
+        'x_center': matched_coords[:, 0],
+        'y_center': matched_coords[:, 1]
+    })
+    catalog.to_csv('matched_sources.csv', index=False)
+    
+    print(f"Matched stars: {len(matched_coords)}")
+    print(f"Match rate: {len(matched_coords)/min(len(stars_f336w), len(stars_f555w))*100:.1f}%")
+    print(f"Catalog saved: matched_sources.csv")
+    print()
+    
+    # STEP 4: Aperture Photometry
+    photometry_catalog = measure_photometry(median_f336w, median_f555w, matched_coords, aperture_radius=3.0)
+    photometry_catalog.to_csv('photometry_catalog.csv', index=False)
+    
+    print(f"Photometry complete: {len(photometry_catalog)} stars with valid magnitudes")
+    print(f"Catalog saved: photometry_catalog.csv")
+    print()
+    
+    # STEP 5: Hertzsprung-Russell Diagram
+    color = photometry_catalog['mag_F336W'] - photometry_catalog['mag_F555W']
+    magnitude = photometry_catalog['mag_F336W']
+    
+    plt.figure(figsize=(8, 10))
+    plt.scatter(color, magnitude, s=1, c='black', alpha=0.5)
+    plt.xlabel('$m_{F336W} - m_{F555W}$', fontsize=14)
+    plt.ylabel('$m_{F336W}$', fontsize=14)
+    plt.title('NGC 1261 - Hertzsprung-Russell Diagram', fontsize=16)
+    plt.gca().invert_yaxis()
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig('HR_diagram.png', dpi=300, bbox_inches='tight')
+    plt.show()
+    
+    print(f"HR diagram created with {len(color)} stars")
+    print(f"Saved as: HR_diagram.png")
