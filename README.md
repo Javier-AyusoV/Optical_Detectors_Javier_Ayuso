@@ -73,12 +73,12 @@ The pipeline generates the following files:
 ### Step 2: Star Detection
 
 - **Method**: Local maxima detection + 2D Gaussian PSF fitting
-- **Detection threshold**: 1σ above image mean
+- **Detection threshold**: 0.6σ for F336W, 0.5σ for F555W (lower for F555W as it's the detection bottleneck)
 - **Fitting box size**: 9×9 pixels
 - **Quality checks**:
   - Positive flux (amplitude > 0)
-  - Ellipticity ≤ 0.7 (roundness criterion)
-  - Size: 0.5 ≤ σ ≤ 5.0 pixels
+  - Ellipticity ≤ 0.9 (roundness criterion)
+  - Size: 0.3 ≤ σ ≤ 6.0 pixels
 - **Expected detections**: 1,000-3,000 stars per filter
 
 ### Step 3: Source Matching
@@ -93,7 +93,7 @@ The pipeline generates the following files:
 ### Step 4: Aperture Photometry
 
 - **Aperture**: Circular, radius = 3.0 pixels
-- **Background**: Local annulus (inner radius = 5.0 pixels, outer radius = 8.0 pixels)
+- **Background**: Local annulus (inner radius = 4.0 pixels, outer radius = 7.0 pixels)
 - **Background estimation**: Median of pixels in annulus
 - **Flux calculation**: Sum of (aperture pixels - background)
 - **Magnitude system**: Instrumental magnitudes
@@ -141,15 +141,15 @@ The following parameters can be adjusted in the code if needed:
 
 | Parameter | Default | Location | Description | Effect if Changed |
 |-----------|---------|----------|-------------|-------------------|
-| `threshold_sigma` | 1.0 | `find_stars()` | Detection threshold (σ above mean) | Lower = more detections, more false positives |
+| `threshold_sigma` | 0.6 (F336W), 0.5 (F555W) | `find_stars()` | Detection threshold (σ above mean) | Lower = more detections, more false positives |
 | `box_size` | 9 | `find_stars()` | Size of cutout for Gaussian fitting | Larger = better for extended sources, slower |
-| `ellipticity_tolerance` | 0.7 | `find_stars()` | Maximum allowed ellipticity | Higher = accepts more elongated sources |
-| `min_sigma` | 0.5 | `find_stars()` | Minimum Gaussian width (pixels) | Lower = accepts smaller/sharper sources |
-| `max_sigma` | 5.0 | `find_stars()` | Maximum Gaussian width (pixels) | Higher = accepts larger/extended sources |
+| `ellipticity_tolerance` | 0.9 | `find_stars()` | Maximum allowed ellipticity | Higher = accepts more elongated sources |
+| `min_sigma` | 0.3 | `find_stars()` | Minimum Gaussian width (pixels) | Lower = accepts smaller/sharper sources |
+| `max_sigma` | 6.0 | `find_stars()` | Maximum Gaussian width (pixels) | Higher = accepts larger/extended sources |
 | `tolerance` | 2.0 | `match_sources()` | Matching distance tolerance (pixels) | Higher = more matches, more false matches |
 | `aperture_radius` | 3.0 | `measure_photometry()` | Photometric aperture radius (pixels) | Larger = more flux, more sky contamination |
-| `sky_inner` | 5.0 | `measure_photometry()` | Background annulus inner radius (pixels) | Must be > aperture_radius |
-| `sky_outer` | 8.0 | `measure_photometry()` | Background annulus outer radius (pixels) | Larger = more background pixels, smoother estimate |
+| `sky_inner` | 4.0 | `measure_photometry()` | Background annulus inner radius (pixels) | Must be > aperture_radius |
+| `sky_outer` | 7.0 | `measure_photometry()` | Background annulus outer radius (pixels) | Larger = more background pixels, smoother estimate |
 
 ### Recommended Parameter Ranges
 
