@@ -156,4 +156,4 @@ The following parameters can be adjusted in the code if needed:
 - **Detection threshold**: 0.5-2.0σ (lower for deep detection, higher for cleaner sample)
 - **Matching tolerance**: 1.0-3.0 pixels (depends on image alignment quality)
 - **Aperture radius**: 2.0-5.0 pixels (should enclose ~90% of stellar flux)
-- **Ellipticity tolerance**: 0.5-0.9 (0.5 for very round sources only, 0.8 more permissive)
+- **Ellipticity tolerance**: 0.5-0.9 (0.5 for very round sources only, 0.9 more permissive)
