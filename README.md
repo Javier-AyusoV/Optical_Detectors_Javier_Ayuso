@@ -30,7 +30,7 @@ The color difference (F336W - F555W) serves as a proxy for stellar temperature, 
 Simply run the main script:
 
 ```bash
-python hst_photometry_pipeline.py
+python code.py
 ```
 
 The pipeline will automatically:
