@@ -190,13 +190,13 @@ print()
 
 # Calculate color and magnitude
 color = photometry_catalog['mag_F336W'] - photometry_catalog['mag_F555W']
-magnitude = photometry_catalog['mag_F555W']
+magnitude = photometry_catalog['mag_F336W']
 
 # Create HR Diagram
 plt.figure(figsize=(8, 10))
 plt.scatter(color, magnitude, s=1, c='black', alpha=0.5)
 plt.xlabel('$m_{F336W} - m_{F555W}$', fontsize=14)
-plt.ylabel('$m_{F555W}$', fontsize=14)
+plt.ylabel('$m_{F335W}$', fontsize=14)
 plt.title('NGC 1261 - Hertzsprung-Russell Diagram', fontsize=16)
 plt.gca().invert_yaxis()  # Bright stars at top (astronomical convention)
 plt.grid(True, alpha=0.3)
