@@ -39,7 +39,7 @@ def gaussian_2d(xy, amp, xo, yo, sx, sy, offset):
     return g.ravel()
 
 
-def find_stars(image, threshold_sigma=1, box_size=9):
+def find_stars(image, threshold_sigma=1, box_size=9, edge_margin=40):
     """ Find stars in image using local maxima detection and Gaussian fitting. 
     Returns array of (x_center, y_center) for detected stars.
     """
@@ -54,6 +54,10 @@ def find_stars(image, threshold_sigma=1, box_size=9):
     h, w = image.shape
     
     for y0, x0 in zip(y_peaks, x_peaks):
+        # Skip sources too close to edges to avoid count noise as stars
+        if x0 < edge_margin or y0 < edge_margin:  # Only left (x) and bottom (y)
+            continue
+        
         # Extract cutout around peak
         y_min, y_max = y0 - half, y0 + half + 1
         x_min, x_max = x0 - half, x0 + half + 1
@@ -161,8 +165,8 @@ if __name__ == "__main__":
     median_f555w = median_combine("Data/F555W", "F555W_median.fits")
     
     # STEP 2: Star Finding
-    stars_f336w = find_stars(median_f336w, threshold_sigma=0.6)
-    stars_f555w = find_stars(median_f555w, threshold_sigma=0.5)
+    stars_f336w = find_stars(median_f336w, threshold_sigma=0.5, edge_margin=45) #skip 45 pixels from the selected limits. Stimated through plotting
+    stars_f555w = find_stars(median_f555w, threshold_sigma=0.5, edge_margin=40)
     
     print(f"F336W: {len(stars_f336w)} stars detected")
     print(f"F555W: {len(stars_f555w)} stars detected")

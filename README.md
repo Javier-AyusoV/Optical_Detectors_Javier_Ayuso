@@ -41,7 +41,7 @@ The pipeline will automatically:
 ### Expected Runtime
 
 - Cosmic ray removal: ~5-10 seconds
-- Star detection: ~1-2 minutes per filter
+- Star detection: ~1-2 minutes
 - Source matching: <1 second
 - Photometry: ~30-60 seconds
 - HR diagram: <1 second
@@ -73,15 +73,12 @@ The pipeline generates the following files:
 ### Step 2: Star Detection
 
 - **Method**: Local maxima detection + 2D Gaussian PSF fitting
-- **Detection threshold**: 0.6σ for F336W, 0.5σ for F555W (lower for F555W as it's the detection bottleneck)
+- **Detection threshold**: 0.6σ 
 - **Fitting box size**: 9×9 pixels
 - **Quality checks**:
   - Positive flux (amplitude > 0)
   - Ellipticity ≤ 0.9 (roundness criterion)
   - Size: 0.3 ≤ σ ≤ 6.0 pixels
-- **Expected detections**: 
-  - 3,000-4,000 stars for F336E
-  - 2,000-3,000 for filter F555W
 
 ### Step 3: Source Matching
 
