@@ -38,15 +38,6 @@ The pipeline will automatically:
 2. Generate intermediate and final output files
 3. Display the HR diagram
 
-### Expected Runtime
-
-- Cosmic ray removal: ~5-10 seconds
-- Star detection: ~1-2 minutes
-- Source matching: <1 second
-- Photometry: ~30-60 seconds
-- HR diagram: <1 second
-
-**Total runtime: ~3-5 minutes** (depends on system specifications)
 
 ## Output Files
 
